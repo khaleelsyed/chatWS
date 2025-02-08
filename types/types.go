@@ -1,4 +1,4 @@
-package main
+package types
 
 type Message struct {
 	Body []byte `json:"body" validate:"required"`

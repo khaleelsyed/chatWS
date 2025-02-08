@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/khaleelsyed/chatWS/types"
 )
 
 var upgrader = websocket.Upgrader{
@@ -35,7 +36,7 @@ type ChatServer struct {
 	sessions map[uuid.UUID]*UserSession
 }
 
-func (us *UserSession) handleMessage(msg Message) {
+func (us *UserSession) handleMessage(msg *types.Message) {
 	switch msg.Type {
 	case "name_change":
 		us.Name = string(msg.Body)
@@ -55,7 +56,7 @@ func (us *UserSession) readLoop() {
 		delete(us.chatserver.sessions, us.uid)
 		us.conn.Close()
 	}()
-	var msg Message
+	var msg types.Message
 	for {
 		var err error
 		if err = us.conn.ReadJSON(&msg); err != nil {
@@ -68,7 +69,7 @@ func (us *UserSession) readLoop() {
 			continue
 		}
 
-		go us.handleMessage(msg)
+		go us.handleMessage(&msg)
 	}
 }
 

@@ -1,21 +1,15 @@
 version: '3'
 
-vars:
-  BINARY_NAME: backend
 
 dotenv: ['.env']
 
 tasks:
-  build:
+  client:
     cmds:
-      - go build -o .bin/{{.BINARY_NAME}}
+      - go build -o ./.bin/client ./client/main.go
+      - ./.bin/client
   
-  run: 
+  server:
     cmds:
-      - task: build
-      - ./.bin/{{.BINARY_NAME}}
-  
-  test:
-    cmds:
-      - task: build
-      - go test -v ./...
+      - go build -o ./.bin/server server/main.go
+      - ./.bin/server
