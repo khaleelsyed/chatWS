@@ -1,16 +1,9 @@
-# GoBasic Template
-
-Template repository to bootstrapping a go project.
+# Chat App - Go websockets
 
 ## Getting Started
 
-1. Create a repository using this template and clone locally
+1. Install [Taskfile](https://taskfile.dev/)
 
-2. Run the following commands and replace `REPO_URL` with the repository url without `https://`
+2. Run `task server` to begin the chat server
 
-    ```bash
-    rm go.mod
-    go mod init <REPO_URL>
-    ```
-
-3. Set the `BINARY_NAME` variable in `Taskfile.yml` to the project name
+3. Run `task client` in a new terminal to start a new client
