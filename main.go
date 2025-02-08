@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
@@ -19,15 +21,32 @@ var upgrader = websocket.Upgrader{
 	HandshakeTimeout: 5 * time.Second,
 }
 
+var globalValidator = validator.New()
+
 type UserSession struct {
 	uid        uuid.UUID
+	Name       string
 	conn       *websocket.Conn
 	chatserver *ChatServer
 }
 
 type ChatServer struct {
 	port     int
-	sessions map[uuid.UUID]UserSession
+	sessions map[uuid.UUID]*UserSession
+}
+
+func (us *UserSession) handleMessage(msg Message) {
+	switch msg.Type {
+	case "name_change":
+		us.Name = string(msg.Body)
+		return
+	case "message":
+		log.Println("Not ready to handle actual messages yet!")
+		return
+	default:
+		log.Panic(errors.New("handleMessage called with bad type"))
+		return
+	}
 }
 
 func (us *UserSession) readLoop() {
@@ -36,6 +55,28 @@ func (us *UserSession) readLoop() {
 		delete(us.chatserver.sessions, us.uid)
 		us.conn.Close()
 	}()
+	var msg Message
+	for {
+		var err error
+		if err = us.conn.ReadJSON(&msg); err != nil {
+			us.notifyError(err)
+			continue
+		}
+
+		if err = globalValidator.Struct(msg); err != nil {
+			us.notifyError(err)
+			continue
+		}
+
+		go us.handleMessage(msg)
+	}
+}
+
+func (us *UserSession) notifyError(err error) {
+	log.Println("client", us.uid, "read error: ", err)
+	if wsWriteErr := us.conn.WriteMessage(websocket.TextMessage, []byte("bad message")); wsWriteErr != nil {
+		log.Println(wsWriteErr)
+	}
 }
 
 func (s *ChatServer) handleWS(w http.ResponseWriter, r *http.Request) {
@@ -46,9 +87,9 @@ func (s *ChatServer) handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uid := uuid.New()
-	log.Println("Client attempting connection:", uid)
+	log.Println("new WS connection:", uid)
 	userSession := newUserSesssion(uid, conn, s)
-	s.sessions[uid] = userSession
+	s.sessions[uid] = &userSession
 
 	go userSession.readLoop()
 }
@@ -65,14 +106,17 @@ func (s *ChatServer) startHTTP() {
 	log.Printf("Starting server on port %d", s.port)
 	go func() {
 		http.HandleFunc("/ws", s.handleWS)
-		http.ListenAndServe(fmt.Sprintf(":%d", s.port), nil)
+		err := http.ListenAndServeTLS(fmt.Sprintf(":%d", s.port), "server.crt", "server.key", nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}()
 }
 
 func newChatServer(port int) *ChatServer {
 	return &ChatServer{
 		port:     port,
-		sessions: make(map[uuid.UUID]UserSession, 2),
+		sessions: make(map[uuid.UUID]*UserSession, 2),
 	}
 }
 
