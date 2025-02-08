@@ -6,10 +6,10 @@ dotenv: ['.env']
 tasks:
   client:
     cmds:
-      - go build -o ./.bin/client ./client/main.go
+      - go build -C ./client -o ../.bin/client .
       - ./.bin/client
   
   server:
     cmds:
-      - go build -o ./.bin/server server/main.go
+      - go build -C ./server -o ../.bin/server .
       - ./.bin/server
