@@ -3,10 +3,12 @@ name: Upload to pkg.go.dev
 # This yml has been used from: https://stackoverflow.com/a/79312988
 
 on:
-  push:
-    tags:
-      - '*'
-    branches: [ "main" ]
+  workflow_run:
+      workflows: ["Build and Test"]
+      branches:
+        - main
+      types:
+        - completed
 
 jobs:
   update-pkg-go-dev:
