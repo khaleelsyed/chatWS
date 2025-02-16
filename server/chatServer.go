@@ -41,7 +41,7 @@ func (s *ChatServer) startHTTP() {
 	log.Printf("Starting server on port %d", s.port)
 	go func() {
 		http.HandleFunc("/ws", s.handleWS)
-		err := http.ListenAndServeTLS(fmt.Sprintf(":%d", s.port), "server.crt", "server.key", nil)
+		err := http.ListenAndServe(fmt.Sprintf(":%d", s.port), nil)
 		if err != nil {
 			log.Fatal(err)
 		}
